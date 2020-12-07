@@ -7,7 +7,7 @@ require conf/machine/include/utilities.inc
 
 # Set specific make target and binary suffix
 IMX_DEFAULT_BOOTLOADER = "u-boot-fslc"
-IMX_DEFAULT_BOOTLOADER_mx8 = "u-boot-imx"
+#IMX_DEFAULT_BOOTLOADER_mx8 = "u-boot-imx"
 
 # Machines or distros can define which BSP it should use by default. We are
 # intending to default for mainline BSP by default and specific machines or
@@ -103,9 +103,9 @@ MACHINEOVERRIDES_EXTENDER_mx6ull = "imxfbdev:imxpxp:imxepdc"
 MACHINEOVERRIDES_EXTENDER_mx7d   = "imxfbdev:imxpxp:imxepdc"
 MACHINEOVERRIDES_EXTENDER_mx7ulp = "imxfbdev:imxpxp:imxgpu:imxgpu2d:imxgpu3d"
 MACHINEOVERRIDES_EXTENDER_mx8qm  = "imxdrm:imxdpu:imxgpu:imxgpu2d:imxgpu3d"
-MACHINEOVERRIDES_EXTENDER_mx8mm  = "imxdrm:imxvpu:imxgpu:imxgpu2d:imxgpu3d"
+#MACHINEOVERRIDES_EXTENDER_mx8mm  = "imxdrm:imxvpu:imxgpu:imxgpu2d:imxgpu3d"
 MACHINEOVERRIDES_EXTENDER_mx8mn  = "imxdrm:imxgpu:imxgpu3d"
-MACHINEOVERRIDES_EXTENDER_mx8mp  = "imxdrm:imxvpu:imxgpu:imxgpu2d:imxgpu3d"
+#MACHINEOVERRIDES_EXTENDER_mx8mp  = "imxdrm:imxvpu:imxgpu:imxgpu2d:imxgpu3d"
 MACHINEOVERRIDES_EXTENDER_mx8mq  = "imxdrm:imxvpu:imxgpu:imxgpu3d"
 MACHINEOVERRIDES_EXTENDER_mx8qxp = "imxdrm:imxdpu:imxgpu:imxgpu2d:imxgpu3d"
 
@@ -127,9 +127,7 @@ MACHINEOVERRIDES_EXTENDER_FILTER_OUT_use-mainline-bsp = " \
     \
     mx8 \
     mx8qm \
-    mx8mm \
     mx8mn \
-    mx8mp \
     mx8mq \
     mx8qxp \
 "
@@ -364,9 +362,12 @@ WKS_FILE_DEPENDS ?= " \
     ${@bb.utils.contains('MACHINE_FEATURES', 'optee', '${OPTEE_WKS_FILE_DEPENDS}', '', d)} \
 "
 
-WKS_FILE_DEPENDS_append_mx8 = " imx-boot "
+WKS_FILE_DEPENDS_append_mx8 = " imx-boot"
+WKS_FILE_DEPENDS_append_use-mainline-bsp = " imx-boot"
 
 SOC_DEFAULT_WKS_FILE ?= "imx-uboot-bootpart.wks.in"
+SOC_DEFAULT_WKS_FILE_use-mainline-bsp ?= "imx-imx-boot-bootpart.wks.in"
+
 SOC_DEFAULT_WKS_FILE_mx8 ?= "imx-imx-boot-bootpart.wks.in"
 SOC_DEFAULT_WKS_FILE_mxs ?= "imx-uboot-mxs-bootpart.wks.in"
 
