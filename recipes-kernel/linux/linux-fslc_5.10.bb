@@ -12,16 +12,16 @@ upstreaming."
 
 include linux-fslc.inc
 
-LIC_FILES_CHKSUM = "file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
+LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 # PV is defined in the base in linux-imx.inc file and uses the LINUX_VERSION definition
 # required by kernel-yocto.bbclass.
 #
 # LINUX_VERSION define should match to the kernel version referenced by SRC_URI and
 # should be updated once patchlevel is merged.
-LINUX_VERSION = "5.4.81"
+LINUX_VERSION = "5.10.0-rc7"
 
-SRCBRANCH = "5.4.x+fslc"
-SRCREV = "092ca50378a020ce709dd098f2f31fd841c6a90a"
+SRCBRANCH = "master"
+SRCREV = "0477e92881850d44910a7e94fc2c46f96faa131f"
 
 COMPATIBLE_MACHINE = "(mxs|mx5|mx6|vf|use-mainline-bsp)"
