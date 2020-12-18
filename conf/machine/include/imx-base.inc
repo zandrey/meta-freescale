@@ -369,14 +369,17 @@ WKS_FILE_DEPENDS ?= " \
 WKS_FILE_DEPENDS_append_mx8 = " imx-boot"
 WKS_FILE_DEPENDS_append_mx8m = " imx-boot"
 
-# We need to restrict the append so we don't add this for other i.MX SoC's.
-WKS_FILE_DEPENDS_append_use-mainline-bsp_aarch64 = " imx-boot"
-
 SOC_DEFAULT_WKS_FILE ?= "imx-uboot-bootpart.wks.in"
 SOC_DEFAULT_WKS_FILE_mx8m ?= "imx-imx-boot-bootpart.wks.in"
 
 SOC_DEFAULT_WKS_FILE_mx8 ?= "imx-imx-boot-bootpart.wks.in"
 SOC_DEFAULT_WKS_FILE_mxs ?= "imx-uboot-mxs-bootpart.wks.in"
+
+# Boot container built as a part of mainline U-Boot uses a separate
+# WKS file, as it packs the flash.bin binary into the boot partition.
+# This binary is produced by U-Boot build itself, and is serves as a
+# direct replacement of imx-boot from NXP.
+SOC_DEFAULT_WKS_FILE_boot-container ?= "imx-boot-container-bootpart.wks.in"
 
 WKS_FILE ?= "${SOC_DEFAULT_WKS_FILE}"
 
