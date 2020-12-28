@@ -14,6 +14,23 @@ DEPENDS_append = " bc-native dtc-native lzop-native"
 # this delopyment location
 BOOT_TOOLS = "imx-boot-tools"
 
+DEPENDS_append_boot-container = " \
+    ${IMX_EXTRA_FIRMWARE} \
+    imx-atf \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'optee-os', '', d)} \
+"
+
+# This package aggregates output deployed by other packages,
+# so set the appropriate dependencies
+do_compile[depends] += " \
+    ${@' '.join('%s:do_deploy' % r for r in '${IMX_EXTRA_FIRMWARE}'.split() )} \
+    imx-atf:do_deploy \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'optee-os:do_deploy', '', d)} \
+"
+
+ATF_MACHINE_NAME = "bl31-${ATF_PLATFORM}.bin"
+ATF_MACHINE_NAME_append = "${@bb.utils.contains('MACHINE_FEATURES', 'optee', '-optee', '', d)}"
+
 PROVIDES += "u-boot"
 
 B = "${WORKDIR}/build"
@@ -26,20 +43,55 @@ EXTRA_OEMAKE += 'HOSTCC="${BUILD_CC} ${BUILD_CPPFLAGS}" \
                  HOSTSTRIP=true'
 
 #
-# imx8m machines require additional deployment tasks to be
-# carried out due to the fact that final boot image is constructed
-# using imx-boot recipe. It produces a boot binary image, which is
-# constructed from various binary components (u-boot with separate
-# dtb, atf, DDR firmware and optional op-tee) into a single image
-# using FIT format. This image is then parsed and loaded either via
+# imx8m machines require a separate build target to be executed
+# due to the fact that final boot image is constructed using flash.bin
+# taget. It produces a boot binary image, which is constructed from
+# various binary components (u-boot with separate dtb, atf, DDR
+# firmware and optional op-tee) into a single image using FIT format.
+# This flash.bin file is then parsed and loaded either via
 # SPL directly (imx8mm), or using bootrom code (imx8mn and imx8mp).
 #
-# In order for imx-boot to construct the final binary boot image,
-# it is required that the U-Boot dtb files are to be deployed into
-# a location known by imx-boot so they could be picked up and
-# inserted into the boot container.
-do_deploy_append_mx8m() {
-    # Deploy the mkimage, u-boot-nodtb.bin and fsl-imx8m*-XX.dtb for mkimage to generate boot binary
+# In order to use flash.bin binary boot image, it is required that
+# the U-Boot build is to be invoked for an additional build target.
+do_compile_prepend_boot-container() {
+    if [ -n "${UBOOT_CONFIG}" ]; then
+        for config in ${UBOOT_MACHINE}; do
+            i=$(expr $i + 1);
+            for type in ${UBOOT_CONFIG}; do
+                j=$(expr $j + 1);
+                if [ $j -eq $i ]; then
+                    for ddr_firmware in ${DDR_FIRMWARE_NAME}; do
+                        # Sanitize the FW name as U-Boot expects it to be without version
+                        if [ -n "${DDR_FIRMWARE_VERSION}" ]; then
+                            ddr_firmware_name=$(echo $ddr_firmware | sed s/_${DDR_FIRMWARE_VERSION}//)
+                        else
+                            ddr_firmware_name="$ddr_firmware"
+                        fi
+                        bbnote "Copy ddr_firmware: ${ddr_firmware} from ${DEPLOY_DIR_IMAGE} -> ${B}/${config}/${ddr_firmware_name}"
+                        cp ${DEPLOY_DIR_IMAGE}/${ddr_firmware} ${B}/${config}/${ddr_firmware_name}
+                    done
+                    if [ -n "${ATF_MACHINE_NAME}" ]; then
+                        cp ${DEPLOY_DIR_IMAGE}/${BOOT_TOOLS}/${ATF_MACHINE_NAME} ${B}/${config}/bl31.bin
+                    else
+                        bberror "ATF binary is undefined, result binary would be unusable!"
+                    fi
+                    # Run compile pass to produce extra boot container, which is
+                    # done via separate target
+                    if [ ! -n "${ATF_LOAD_ADDR}" ]; then
+                        bberror "ATF_LOAD_ADDR is undefined, result binary would be unusable!"
+                    fi
+                    export ATF_LOAD_ADDR=${ATF_LOAD_ADDR}
+                    oe_runmake -C ${S} O=${B}/${config} flash.bin
+                fi
+            done
+            unset  j
+        done
+        unset  i
+    fi
+}
+
+do_deploy_append_boot-container() {
+    # Deploy the resulted flash.bin for WIC to pick it up
     if [ -n "${UBOOT_CONFIG}" ]; then
         for config in ${UBOOT_MACHINE}; do
             i=$(expr $i + 1);
@@ -47,9 +99,8 @@ do_deploy_append_mx8m() {
                 j=$(expr $j + 1);
                 if [ $j -eq $i ]
                 then
-                    install -d ${DEPLOYDIR}/${BOOT_TOOLS}
-                    install -m 0777 ${B}/${config}/arch/arm/dts/${UBOOT_DTB_NAME}  ${DEPLOYDIR}/${BOOT_TOOLS}
-                    install -m 0777 ${B}/${config}/u-boot-nodtb.bin  ${DEPLOYDIR}/${BOOT_TOOLS}/u-boot-nodtb.bin-${MACHINE}-${UBOOT_CONFIG}
+                    install -m 0777 ${B}/${config}/flash.bin  ${DEPLOYDIR}/flash.bin-${MACHINE}-${UBOOT_CONFIG}
+                    ln -sf flash.bin-${MACHINE}-${UBOOT_CONFIG} flash.bin
                 fi
             done
             unset  j
